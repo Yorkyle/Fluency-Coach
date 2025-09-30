@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fluency Coach – Automated WCPM</title>
+<style>
+  :root{--bg:#0b1a2a;--card:#0f2742;--ink:#e7f2ff;--muted:#a9c6e8;--accent:#58c7ff}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:auto;padding:24px}
+  .grid{display:grid;gap:16px}
+  .card{background:var(--card);border:1px solid #1e3a5c;border-radius:16px;padding:16px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  label{font-weight:600}
+  select,button{border-radius:12px;border:1px solid #2a4771;background:#0a1f39;color:var(--ink);padding:8px 10px}
+  button.primary{background:linear-gradient(180deg,#169bf0,#116bb9);border:0;cursor:pointer}
+  .meter{height:10px;background:#0a1f39;border:1px solid #2a4771;border-radius:999px;overflow:hidden}
+  .bar{height:100%;width:0;background:linear-gradient(90deg,#3ff2a8,#12d6ff)}
+  .passage{line-height:2.1;background:#0a1f39;border:1px solid #2a4771;border-radius:12px;padding:16px;min-height:180px;max-height:320px;overflow-y:auto}
+  .word{padding:2px 4px;border-radius:6px;margin:0 1px;display:inline-block}
+  .curr{outline:3px solid var(--accent); background:#12355d; box-shadow:0 0 0 3px rgba(18,213,255,.25)}
+  .ok{background:rgba(25,195,125,.25)}
+  .err{background:rgba(255,90,95,.25)}
+  .kpi{display:grid;grid-template-columns:repeat(4, minmax(120px,1fr));gap:10px}
+  .kpi .box{background:#0a1f39;border:1px solid #2a4771;border-radius:12px;padding:10px;text-align:center}
+  .kpi .big{font-weight:800;font-size:20px}
+  .hint{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap grid">
+  <div class="card grid">
+    <h1 style="margin:0">Fluency Coach – Automated WCPM</h1>
+
+    <div class="row">
+      <label for="grade">Grade</label>
+      <select id="grade" style="min-width:90px"></select>
+
+      <label for="passage">Passage</label>
+      <select id="passage" style="min-width:420px"></select>
+
+      <button class="primary" id="btnStart">Start 60s</button>
+      <button id="btnStop" disabled>Stop</button>
+      <button id="btnReset">Reset</button>
+      <button id="btnSkip" disabled>Skip</button>
+
+      <span id="status" class="hint">Idle</span>
+    </div>
+
+    <div class="meter"><div class="bar" id="bar"></div></div>
+
+    <div id="passageView" class="passage"></div>
+
+    <div class="kpi">
+      <div class="box"><div class="hint">Attempted</div><div class="big" id="kAttempted">0</div></div>
+      <div class="box"><div class="hint">Correct</div><div class="big" id="kCorrect">0</div></div>
+      <div class="box"><div class="hint">Errors</div><div class="big" id="kErrors">0</div></div>
+      <div class="box"><div class="hint">WCPM</div><div class="big" id="kWcpm">0</div></div>
+    </div>
+
+    <div class="hint">Hotkeys: <b>Space</b> mark correct & advance, <b>→</b> skip word, <b>←</b> go back.</div>
+  </div>
+</div>
+
+<script>
+/* ---------- Passages (5th & 6th, long) ---------- */
+const PASSAGES = [
+  {id:"g5_1",grade:"5",title:"The Wright Brothers",text:`In 1903, two brothers from Dayton, Ohio, achieved what people had only dreamed of for centuries: flight. Orville and Wilbur Wright had studied gliders, engines, and the behavior of birds. They built a powered craft with wooden wings and a small gasoline motor. On December 17th, Orville made the first controlled, sustained flight at Kitty Hawk, North Carolina. The flight lasted just twelve seconds, but it changed the world. By the end of the day, the brothers had completed four flights, each a little longer than the last. Reporters at first did not believe the story. Soon, however, newspapers published photographs and descriptions, and the Wright brothers became known everywhere. Their invention opened the door to modern aviation. People could now travel across continents and oceans in hours instead of weeks. What began as an experiment in a bicycle shop soon reshaped history, commerce, and human imagination.`},
+  {id:"g5_2",grade:"5",title:"Life in Colonial America",text:`Daily life in colonial America was very different from life today. Most families lived on farms and had to grow or make nearly everything they needed. Children were expected to help with chores such as gathering firewood, feeding animals, or spinning thread. Schools were few, and many children learned to read and write at home. Towns had blacksmiths, carpenters, and printers who provided goods and services. People traveled by horse, on foot, or by boat along rivers. News spread slowly, sometimes taking weeks to arrive from Europe. Colonists faced challenges such as harsh winters, illness, and disputes with neighboring groups. Yet they also created thriving communities, built meetinghouses, and celebrated with fairs and festivals. Their determination and cooperation helped shape the traditions that continue in America today.`},
+  {id:"g6_1",grade:"6",title:"The Great Chicago Fire",text:`In October 1871, a terrible fire swept through Chicago, Illinois. The city had been dry for months, and most of the buildings were made of wood. On the evening of October 8th, flames started in a small barn on the city’s west side. Strong winds quickly spread the fire, jumping from building to building. Within hours, much of Chicago was burning. People rushed to the lakefront for safety as churches, homes, and businesses collapsed in smoke and ash. The fire burned for two days before rain finally helped extinguish it. By then, more than 17,000 structures were destroyed, and over 100,000 residents were left homeless. Despite the devastation, the people of Chicago rebuilt with determination. Architects designed stronger buildings with steel frames, and new fire codes required safer construction. Out of the tragedy grew a modern city, famous for its skyline and resilience. The Great Fire remains one of the most important events in the city’s history and a lesson in how communities recover and grow stronger after disaster.`},
+  {id:"g6_2",grade:"6",title:"The Voyage of Lewis and Clark",text:`In 1803, President Thomas Jefferson asked Meriwether Lewis and William Clark to lead an expedition across the newly purchased Louisiana Territory. The goal was to map the land, establish trade, and find a water route to the Pacific Ocean. With more than forty men, the Corps of Discovery set out from St. Louis in May 1804. They faced many hardships: dangerous rivers, harsh weather, and limited supplies. Yet they also discovered vast prairies, towering mountains, and countless plants and animals unknown to science. The help of Native American groups, especially the Shoshone woman Sacagawea, was critical. She guided the expedition, translated, and secured horses for the mountain crossings. After traveling more than 8,000 miles, the explorers reached the Pacific in November 1805. They returned two years later with maps, journals, and samples that expanded the nation’s knowledge. Their journey demonstrated the challenges of exploration and the importance of cooperation and courage in achieving great goals.`}
+];
+
+/* ---------- Helpers & state ---------- */
+const $ = id => document.getElementById(id);
+const clean = s => (s||"").toLowerCase().replace(/[“”„’'".,!?;:()\[\]{}]/g,"");
+const splitWords = t => t.split(/\s+/).map(w=>w.trim()).filter(Boolean);
+
+let words=[], marks=[], curr=0;
+let running=false, t0=0, timerId=null, total=60;
+let recog=null, recognizing=false;
+let lastChangeTime=0;
+const STOPWORDS = new Set(["oh","uh","um","er","ah","uhh","umm","i","mean","like","so","yeah","okay","ok","sorry"]);
+
+/* Tuning (made more forgiving so it advances reliably) */
+const MATCH_THRESHOLD = 0.75;      // was 0.85
+const ADVANCE_TIMEOUT_MS = 500;    // if stuck on a word, advance as error after ~0.5s
+
+/* ---------- Init ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const grades = [...new Set(PASSAGES.map(p=>p.grade))].sort((a,b)=>+a-+b);
+  $('grade').innerHTML = grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+  renderPassageList();
+  $('grade').addEventListener('change', renderPassageList);
+  $('passage').addEventListener('change', e => loadPassage(e.target.value));
+
+  $('btnStart').onclick = startAll;
+  $('btnStop').onclick  = stopAll;
+  $('btnReset').onclick = resetAll;
+  $('btnSkip').onclick  = ()=>{ if(!running) return; marks[curr]=-1; curr=Math.min(curr+1, words.length); renderPassageView(); updateKPIs(); };
+
+  // hotkeys
+  document.addEventListener('keydown', (e)=>{
+    if(!running) return;
+    if(e.key===' '){ e.preventDefault(); marks[curr]=1; curr=Math.min(curr+1, words.length); renderPassageView(); updateKPIs(); lastChangeTime=performance.now(); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); marks[curr]=-1; curr=Math.min(curr+1, words.length); renderPassageView(); updateKPIs(); lastChangeTime=performance.now(); }
+    else if(e.key==='ArrowLeft'){ e.preventDefault(); curr=Math.max(0, curr-1); renderPassageView(); updateKPIs(); lastChangeTime=performance.now(); }
+  });
+});
+
+/* ---------- Passage UI ---------- */
+function renderPassageList(){
+  const g = $('grade').value;
+  const list = PASSAGES.filter(p=>p.grade===g);
+  $('passage').innerHTML = list.map(p => {
+    const wc = splitWords(p.text).length;
+    return `<option value="${p.id}">${p.title} (≈${wc} words)</option>`;
+  }).join('');
+  loadPassage($('passage').value);
+}
+function loadPassage(id){
+  const p = PASSAGES.find(x=>x.id===id) || PASSAGES[0];
+  words = splitWords(p.text);
+  marks = new Array(words.length).fill(0);
+  curr = 0;
+  renderPassageView();
+  updateKPIs();
+}
+function renderPassageView(){
+  const frag = document.createDocumentFragment();
+  words.forEach((w,i)=>{
+    const span = document.createElement('span');
+    span.className = 'word' + (i===curr?' curr':'') + (marks[i]===1?' ok':'') + (marks[i]===-1?' err':'');
+    span.textContent = w + ' ';
+    frag.appendChild(span);
+  });
+  const pv = $('passageView');
+  pv.innerHTML = '';
+  pv.appendChild(frag);
+  const currEl = pv.querySelector('.word.curr');
+  if(currEl && currEl.scrollIntoView){ currEl.scrollIntoView({behavior:'instant', block:'center'}); }
+}
+
+/* ---------- Timer ---------- */
+function startAll(){
+  if(running) return;
+  running=true;
+  $('btnStart').disabled=true; $('btnStop').disabled=false; $('btnSkip').disabled=false;
+  marks.fill(0); curr=0; renderPassageView(); updateKPIs();
+  t0=performance.now(); timerId=requestAnimationFrame(tick);
+  startRecog();
+}
+function stopAll(){
+  if(!running) return;
+  running=false;
+  $('btnStart').disabled=false; $('btnStop').disabled=true; $('btnSkip').disabled=true;
+  if(timerId) cancelAnimationFrame(timerId);
+  if(recognizing && recog){ try{recog.stop();}catch{} recognizing=false; }
+  $('status').textContent='Stopped';
+}
+function resetAll(){
+  running=false; if(timerId) cancelAnimationFrame(timerId);
+  if(recognizing && recog){ try{recog.stop();}catch{} recognizing=false; }
+  curr=0; marks.fill(0); $('bar').style.width='0%'; $('status').textContent='Idle';
+  renderPassageView(); updateKPIs();
+}
+function tick(ts){
+  const elapsed=(ts-t0)/1000;
+  $('bar').style.width=Math.min(100,(elapsed/total)*100)+'%';
+  if(elapsed>=total){ stopAll(); return; }
+  timerId=requestAnimationFrame(tick);
+}
+
+/* ---------- ASR & Matching ---------- */
+function startRecog(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ $('status').textContent='Speech recognition unavailable'; return; }
+  recog = new SR();
+  recog.lang='en-US';
+  recog.continuous=true; recog.interimResults=true;
+  recognizing=true; $('status').textContent='Listening…';
+
+  let finalBuf="";
+  recog.onresult = e => {
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const tr=e.results[i][0].transcript;
+      if(e.results[i].isFinal) finalBuf += ' ' + tr;
+      else interim += ' ' + tr;
+    }
+    if(interim.trim()) consumeInterim(interim);
+    if(finalBuf.trim()){ consumeFinal(finalBuf); finalBuf=''; }
+  };
+  recog.onerror = () => { $('status').textContent='ASR error — use hotkeys if needed'; };
+  recog.onend   = () => { recognizing=false; $('status').textContent='Mic ended — press Start to try again'; };
+  try{ recog.start(); }catch{ recognizing=false; $('status').textContent='Mic blocked'; }
+}
+
+function similarity(a,b){
+  a=clean(a); b=clean(b);
+  if(a===b) return 1;
+  if(a && b && (a.startsWith(b)||b.startsWith(a)) && Math.abs(a.length-b.length)<=1) return MATCH_THRESHOLD;
+  return 0;
+}
+
+/* Accept variants for “a / an / I” so articles don’t get penalized */
+function isArticleMatch(token, target){
+  token = clean(token); target = clean(target);
+  if(target==='a')  return token==='a' || token==='uh' || token==='eh' || token==='ay';
+  if(target==='an') return token==='an' || token==='uhn' || token==='un';
+  if(target==='i')  return token==='i' || token==='eye';
+  return false;
+}
+
+/* Interim = fast advance on strong matches only (never mark errors here) */
+function consumeInterim(txt){
+  const tokens = splitWords(txt);
+  let moved=false; const now=performance.now();
+  for(const raw of tokens){
+    if(curr>=words.length) break;
+    const t = clean(raw); if(!t) continue;
+
+    const target = words[curr];
+    if(isArticleMatch(t, target) || similarity(t, target)>=MATCH_THRESHOLD){
+      marks[curr]=1; curr++; moved=true; lastChangeTime=now;
+    }
+  }
+  if(moved){ renderPassageView(); updateKPIs(); }
+}
+
+/* Final = authoritative; can mark errors or advance on timeout */
+function consumeFinal(txt){
+  const tokens = splitWords(txt);
+  let moved=false; let now=performance.now();
+  for(const raw of tokens){
+    if(curr>=words.length) break;
+    const t = clean(raw); if(!t) continue;
+
+    const target = words[curr];
+    if(isArticleMatch(t, target) || similarity(t, target)>=MATCH_THRESHOLD){
+      marks[curr]=1; curr++; moved=true; lastChangeTime=now;
+    }else{
+      if((now - lastChangeTime) > ADVANCE_TIMEOUT_MS){
+        marks[curr]=-1; curr++; moved=true; lastChangeTime=now;
+      }
+    }
+  }
+  if(moved){ renderPassageView(); updateKPIs(); }
+}
+
+/* ---------- KPIs ---------- */
+function updateKPIs(){
+  const attempted = Math.max(curr, marks.findIndex(m=>m!==0)===-1 ? 0 : (marks.length - [...marks].reverse().findIndex(m=>m!==0)));
+  const correct   = marks.filter(m=>m===1).length;
+  const errors    = marks.filter(m=>m===-1).length;
+  const wcpm      = correct; // 60s sample
+  $('kAttempted').textContent = attempted;
+  $('kCorrect').textContent   = correct;
+  $('kErrors').textContent    = errors;
+  $('kWcpm').textContent      = wcpm;
+}
+</script>
+</body>
+</html>
