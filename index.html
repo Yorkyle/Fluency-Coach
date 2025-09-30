@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Fluency Coach – Automated WCPM</title>
 
-<!-- Optional: tiny built-in favicon (no extra file needed) -->
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" ry="12" fill="%230f2742"/><path d="M18 22h28M18 32h20M18 42h24" stroke="%2358c7ff" stroke-width="4" stroke-linecap="round"/></svg>'>
 
 <style>
@@ -26,7 +25,7 @@
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .meter{height:10px;background:#0a1f39;border:1px solid #2a4771;border-radius:999px;overflow:hidden}
   .bar{height:100%;width:0;background:linear-gradient(90deg,#3ff2a8,#12d6ff)}
-  .passage{line-height:1.9;background:#0a1f39;border:1px solid #2a4771;border-radius:12px;padding:16px;min-height:160px;max-height:320px;overflow:auto}
+  .passage{line-height:1.9;background:#0a1f39;border:1px solid #2a4771;border-radius:12px;padding:16px;min-height:160px;max-height:360px;overflow:auto}
   .word{padding:2px 4px;border-radius:6px;margin:0 1px;display:inline-block}
   .curr{outline:2px dashed var(--accent);background:#12355d}
   .ok{background:rgba(25,195,125,.25)}
@@ -65,11 +64,11 @@
           </div>
           <div>
             <label for="passage">Passage</label><br/>
-            <select id="passage" style="min-width:260px"></select>
+            <select id="passage" style="min-width:320px"></select>
           </div>
           <div>
             <label for="target">Target WCPM</label><br/>
-            <input id="target" type="number" value="90" style="width:110px" />
+            <input id="target" type="number" value="110" style="width:120px" />
           </div>
         </div>
         <div class="row">
@@ -97,7 +96,7 @@
       <div class="grid">
         <label>Passage</label>
         <div id="passageView" class="passage"></div>
-        <div class="tiny muted">Tip: If auto-matching is unavailable, you can still click words to toggle <span style="background:rgba(25,195,125,.25);padding:0 4px;border-radius:6px">correct</span>/<span style="background:rgba(255,90,95,.25);padding:0 4px;border-radius:6px">error</span> and adjust counts during the minute.</div>
+        <div class="tiny muted">Tip: If auto-matching is unavailable, click words to toggle <span style="background:rgba(25,195,125,.25);padding:0 4px;border-radius:6px">correct</span>/<span style="background:rgba(255,90,95,.25);padding:0 4px;border-radius:6px">error</span> and adjust counts during the minute.</div>
       </div>
     </div>
   </div>
@@ -111,33 +110,53 @@
       </tr></thead><tbody></tbody></table>
     </div>
   </div>
-
-  <details class="card">
-    <summary><strong>Settings & Notes</strong></summary>
-    <div class="grid">
-      <div class="tiny muted">Speech recognition uses the browser (Chrome’s webkitSpeechRecognition). If unavailable or blocked, you can still run the timing and click words manually; scores will update live.</div>
-      <div class="tiny muted">Matching is forgiving (punctuation and simple variants ignored). Manual corrections are expected for young readers.</div>
-    </div>
-  </details>
 </div>
 
 <script>
-/**** Sample Passage Library ***************************************************/
+/**** Longer Passage Library (5× G5, 5× G6) ************************************/
 const PASSAGES = [
-  { id:"g2_1", grade:"2", title:"At the Park", text:`Ben and Mia went to the park after school. The sun was warm, and a light wind moved the leaves. Ben pushed Mia on the swing while she laughed. Then they took turns climbing the low rock wall. A small dog chased a red ball, and the owner waved hello. When it was time to go, they promised to come back on Saturday.` },
-  { id:"g3_1", grade:"3", title:"The Class Garden", text:`Our class started a garden in the spring. We planted beans, lettuce, and bright yellow flowers. Everyone had a job. Some students pulled weeds while others carried water. We kept a chart to track how tall the plants grew each week. By the end of May, we had a salad party with the food we grew ourselves.` },
-  { id:"g4_1", grade:"4", title:"A Windy Day", text:`The wind pushed dark clouds across the sky and bent the tall grass by the river. Birds fluttered close to the ground, searching for shelter. I pulled my jacket tight and hurried home. My brother was already inside, taping a poster to the wall that read, "Be Ready." We checked the weather radio and filled a jug with water just in case.` },
-  { id:"g5_1", grade:"5", title:"Saving the Science Fair", text:`Jamal planned a solar oven for the science fair, but the day turned cloudy and cool. He worried that his project would fail. Then he remembered a tip from his teacher about reflecting light. Using foil, he built a simple mirror to direct sunlight toward the oven. The temperature finally rose enough to melt chocolate chips, and the judges smiled.` }
+  // ---------------- Grade 5 ----------------
+  { id:"g5_1", grade:"5", title:"Saving the Science Fair",
+    text:`Jamal planned a solar oven for the science fair, but the day turned cloudy and cool. He worried that his project would fail. Then he remembered a tip from his teacher about reflecting light. Using foil, he built a wide mirror to direct sunlight toward the oven. The temperature finally rose enough to melt chocolate chips, and the judges smiled. Jamal explained how small changes can improve a design, and he promised to share his notes with classmates. Although he did not win first place, he learned more from the struggle than he expected, and he walked home proud.` },
+
+  { id:"g5_2", grade:"5", title:"Mapmakers at Work",
+    text:`Long before satellites, mapmakers traveled by foot, horse, or boat and measured the world with ropes and angles. They drew coastlines as carefully as they could, but storms often changed the shore. Today, scientists use lasers and radar to scan entire valleys in a single flight. Computers layer information onto digital maps, adding roads, rivers, and even wildfire risk. Yet old maps still matter. They show how towns grew, where trails once crossed, and which place names were forgotten. A good map tells a story about the land, and the story keeps growing as people add new chapters.` },
+
+  { id:"g5_3", grade:"5", title:"The Library on Wheels",
+    text:`On summer Saturdays, a bright blue bus parks near the playground. It is our traveling library. Children trade finished books for fresh ones, and the driver stamps cards with cheerful thumps. Ms. Rivera recommends mysteries to one reader and quiet poetry to another. Sometimes neighbors drop off donations, and sometimes the bus brings laptops so families can apply for jobs. The library on wheels is more than shelves with wheels; it is a promise that stories can find you wherever you live. When the bus pulls away, it leaves a trail of ideas that lasts the whole week.` },
+
+  { id:"g5_4", grade:"5", title:"The Storm Drill",
+    text:`When thunder rolled over the hills, our class practiced a storm drill. We moved quickly but calmly into the hallway and crouched against the wall. The principal squeezed past, checking doors and reminding everyone to stay away from windows. After a few minutes, the power flickered and the building grew quiet. I listened to the rain brush the roof like a broom. Then the all-clear bell rang, and we returned to class. The drill took only ten minutes, but it made us feel prepared. Nobody can stop a storm, yet we can learn to face it safely together.` },
+
+  { id:"g5_5", grade:"5", title:"The River Clean-Up",
+    text:`Every spring our town hosts a river clean-up. Volunteers gather at the boat ramp with gloves, buckets, and tall boots. This year the water was low, so we found old cans wedged between stones and a bicycle tangled in vines. A wildlife expert explained how plastic breaks into tiny pieces that fish can swallow. We sorted the trash into bins and weighed each bag. By noon the piles looked smaller, and the riverbank looked wider. The current kept sliding past, silver and patient. Cleaning once does not solve the problem, but it shows the river we will keep coming back.` },
+
+  // ---------------- Grade 6 ----------------
+  { id:"g6_1", grade:"6", title:"A Museum at Night",
+    text:`Our class slept under the dinosaur skeletons during a museum overnight. After the lights dimmed, a guide led us through exhibits using small flashlights. The beams slid over fossils, ship models, and a woven basket older than our town. In the planetarium, the ceiling filled with stars, and a scientist explained how light takes years to reach our eyes. Back in the main hall, we unrolled sleeping bags beside the giant bones. The building felt different at night, like a library holding its breath. In the morning, the doors opened and the museum spoke again in cheerful daytime voices.` },
+
+  { id:"g6_2", grade:"6", title:"The Bridge Contest",
+    text:`For engineering club we built bridges from thin strips of wood and glue. The rules were simple: the bridge had to span thirty centimeters and hold as much weight as possible. Our first try looked neat but snapped in the middle. We studied photos of real trusses and noticed how triangles share the load. The next version used fewer pieces arranged more wisely. During testing, the bridge sagged, trembled, and then surprised us by holding a stack of textbooks. Strength is not only about more material; it is also about design, patience, and learning from collapse.` },
+
+  { id:"g6_3", grade:"6", title:"Signals from the Sea",
+    text:`On a foggy morning the harbor sounded like a conversation. A bell buoy clanged slowly as waves rolled under it. The ferry answered with a low horn, and gulls signed their names on the air. Scientists study these signals to keep ships safe. Some install underwater microphones to record whale songs so captains can steer clear. Others tag turtles with tiny transmitters to map their routes. The ocean speaks in clicks, rumbles, and rhythms. When we listen carefully, we learn where creatures travel, when storms rise, and how busy humans can be without meaning to crowd the sea.` },
+
+  { id:"g6_4", grade:"6", title:"The Long Walk for Water",
+    text:`Amina wakes before sunrise and ties two yellow jugs to a cart. She and her brother walk dusty paths to the community well. The trip takes an hour each way. At school, Amina likes science and wonders how engineers might bring a pipe to her village. A visiting group teaches students to build simple filters with gravel, sand, and charcoal. Clean water should not be rare, Amina says, but it still feels like treasure. When the rainy season finally arrives, the well runs faster, and the walk home is lighter, even though the jugs are full.` },
+
+  { id:"g6_5", grade:"6", title:"Newsroom Morning",
+    text:`The student newsroom hums before the first bell. Reporters finish interviews, photographers check batteries, and the editor lists headlines on a whiteboard. Today we are covering the robotics team, a budget vote, and a local bakery that hires teens. Our adviser reminds us to verify names and facts, even when a story seems obvious. After lunch, layout begins. We trim sentences, choose captions, and balance serious pieces with lighter ones. When the issue finally prints, the ink smells like rain. We stack copies by the office door, proud of the small city of voices we built.` }
 ];
 
 /**** Utility *****************************************************************/
 const $ = id => document.getElementById(id);
 const clean = s => (s||"").toLowerCase().replace(/[“”„”\u2019'".,!?;:()\[\]{}]/g,"");
+function endsPunct(w){ return /[.,!?;:]$/.test(w||""); }
 
 function splitWords(text){
   return text.replace(/\s+/g,' ').trim().split(' ').map(w=>w.trim()).filter(Boolean);
 }
-function similarity(a,b){ // simple forgiving match
+function similarity(a,b){
   a = clean(a); b = clean(b);
   if(!a || !b) return 0;
   if(a===b) return 1;
@@ -146,29 +165,36 @@ function similarity(a,b){ // simple forgiving match
 }
 
 /**** State *******************************************************************/
-let words = [];               // passage words
+let words = [];
 let marks = [];               // 0=unread, 1=correct, -1=error
-let curr = 0;                 // current word index
+let curr = 0;
 let running = false, t0=0, timerId=null, total=60;
 let recog=null, recognizing=false;
 let lastChangeTime = 0;
 let lastChangedIdx = -1;
 let nonMatchStreak = 0;
+
+// NEW: grace period after punctuation to avoid mis-flagging first word next sentence
+const PUNCT_COOLOFF_MS = 250; // tweak if needed
+let cooloffUntil = 0;
+
 const STOPWORDS = new Set(["oh","uh","um","er","ah","uhh","umm","i","mean","like","so","yeah","okay","ok","sorry"]);
 
 /**** Build selectors *********************************************************/
 (function initSelectors(){
   const grades = [...new Set(PASSAGES.map(p=>p.grade))].sort((a,b)=>+a-+b);
   grades.forEach(g=>{ const opt=document.createElement('option'); opt.value=g; opt.textContent=g; $('grade').appendChild(opt); });
-  $('grade').value = grades[0];
+  $('grade').value = "5";
   renderPassageList();
 })();
 function renderPassageList(){
   const g = $('grade').value;
   $('passage').innerHTML='';
   PASSAGES.filter(p=>p.grade===g).forEach(p=>{
+    const wc = splitWords(p.text).length;
     const opt=document.createElement('option');
-    opt.value=p.id; opt.textContent=`${p.title} (≈${splitWords(p.text).length} words)`; $('passage').appendChild(opt);
+    opt.value=p.id; opt.textContent=`${p.title} — ~${wc} words`;
+    $('passage').appendChild(opt);
   });
   loadPassage($('passage').value);
 }
@@ -179,13 +205,16 @@ function loadPassage(id){
   const p = PASSAGES.find(x=>x.id===id) || PASSAGES[0];
   words = splitWords(p.text);
   marks = new Array(words.length).fill(0);
-  curr = 0; updateKPIs();
+  curr = 0; nonMatchStreak=0; cooloffUntil=0;
+  updateKPIs();
   renderPassageView();
+  $('status').textContent = `${p.title} (Grade ${p.grade})`;
 }
 
+/**** Rendering ***************************************************************/
 function scrollToCurrent(){
   const el = document.querySelector('#passageView .curr');
-  if (el) el.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'smooth'});
+  if (el) el.scrollIntoView({block:'center', inline:'nearest', behavior:'smooth'});
 }
 function renderPassageView(){
   const frag = document.createDocumentFragment();
@@ -222,7 +251,7 @@ function tick(ts){
 }
 function stopTimer(){ if(timerId){ cancelAnimationFrame(timerId); timerId=null; } }
 
-/**** Speech Recognition (fast interim + final) *******************************/
+/**** Speech Recognition (fast interim + final + punctuation cooloff) *********/
 function startRecog(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
   if(!SR){ $('status').textContent='ASR not available. Use manual clicks if desired.'; return; }
@@ -240,10 +269,8 @@ function startRecog(){
       if (e.results[i].isFinal) finals += " " + tr; else inter += " " + tr;
     }
     const now = performance.now();
-    if (inter.trim() && now - lastInterimAt > 120) { // responsive cursor
-      consumeTranscript(inter); lastInterimAt = now;
-    }
-    if (finals.trim()) consumeTranscript(finals); // authoritative
+    if (inter.trim() && now - lastInterimAt > 120) { consumeTranscript(inter); lastInterimAt = now; }
+    if (finals.trim()) consumeTranscript(finals);
   };
 
   recog.onerror = ()=>{ $('status').textContent='ASR error (continue manual if needed).'; };
@@ -255,9 +282,13 @@ function consumeTranscript(txt){
   const tokens = splitWords(txt).map(clean);
   let moved = false;
   const now = performance.now();
+
   for(const t of tokens){
     if(!t) continue;
     if(STOPWORDS.has(t)) continue;
+
+    // During punctuation cool-off, ignore mismatches to avoid false negatives on first word
+    const inCooloff = now < cooloffUntil;
 
     // self-correction: flip previous error to correct if quickly repeated
     if(curr>0 && marks[curr-1]===-1 && similarity(t, words[curr-1])>=0.85 && (now - lastChangeTime) < 3000){
@@ -270,14 +301,27 @@ function consumeTranscript(txt){
     const sim = similarity(t, target);
 
     if(sim>=0.85){
+      // correct read of current word → advance
       marks[curr]=1; curr++; moved=true; nonMatchStreak = 0;
       lastChangedIdx = curr-1; lastChangeTime = now;
+
+      // If the word just finalized ended with punctuation, start a cool-off for the NEXT word
+      if(endsPunct(target)) {
+        cooloffUntil = performance.now() + PUNCT_COOLOFF_MS;
+      }
     } else {
+      // If we're in the punctuation cool-off, don't count a miss yet
+      if (inCooloff) continue;
+
       nonMatchStreak++;
-      // advance sooner if the next word matches (skip/omission)
+      // If reader clearly jumped ahead and cool-off passed, count omission and move
       if(curr+1 < words.length && similarity(t, words[curr+1])>=0.85 && nonMatchStreak>=2){
         marks[curr] = -1; curr++; moved=true; nonMatchStreak = 0;
         lastChangedIdx = curr-1; lastChangeTime = now;
+
+        if(endsPunct(words[curr-1])) {
+          cooloffUntil = performance.now() + PUNCT_COOLOFF_MS;
+        }
       }
     }
   }
@@ -296,12 +340,13 @@ function updateKPIs(){
   $('wcpm').textContent = wcpm;
 }
 
-/**** Start/Stop/Reset ********************************************************/
+/**** Controls ***************************************************************/
 function startAll(){
   if(running) return;
   running = true; $('status').textContent='Recording & matching…';
   $('btnStart').disabled = true; $('btnStop').disabled = false; $('btnSave').disabled = true;
-  marks.fill(0); curr=0; renderPassageView(); updateKPIs();
+  marks.fill(0); curr=0; nonMatchStreak=0; cooloffUntil=0;
+  renderPassageView(); updateKPIs();
   startTimer(); startRecog();
 }
 function stopAll(){
@@ -313,11 +358,10 @@ function stopAll(){
 }
 function resetAll(){
   running=false; stopTimer(); if(recognizing && recog){ try{recog.stop();}catch{} recognizing=false; }
-  marks.fill(0); curr=0; $('bar').style.width='0%'; $('status').textContent='Idle';
+  marks.fill(0); curr=0; nonMatchStreak=0; cooloffUntil=0; $('bar').style.width='0%'; $('status').textContent='Idle';
   $('btnStart').disabled=false; $('btnStop').disabled=true; $('btnSave').disabled=true;
   renderPassageView(); updateKPIs();
 }
-
 $('btnStart').onclick = startAll;
 $('btnStop').onclick = stopAll;
 $('btnReset').onclick = resetAll;
