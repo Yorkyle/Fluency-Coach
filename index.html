@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fluency Coach – Automated WCPM</title>
+
+<!-- Optional: tiny built-in favicon (no extra file needed) -->
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" ry="12" fill="%230f2742"/><path d="M18 22h28M18 32h20M18 42h24" stroke="%2358c7ff" stroke-width="4" stroke-linecap="round"/></svg>'>
+
+<style>
+  :root{--bg:#0b1a2a;--card:#0f2742;--ink:#e7f2ff;--muted:#a9c6e8;--accent:#58c7ff;--ok:#19c37d;--warn:#ffb020;--bad:#ff5a5f}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:auto;padding:24px}
+  .grid{display:grid;gap:16px}
+  .two{grid-template-columns:1fr 1fr}
+  .card{background:var(--card);border:1px solid #1e3a5c;border-radius:16px;padding:16px;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+  h1{margin:0 0 6px;font-size:26px}
+  .sub{margin:0;color:var(--muted)}
+  label{font-weight:600}
+  input,select,textarea,button{border-radius:12px;border:1px solid #2a4771;background:#0a1f39;color:var(--ink);padding:10px 12px}
+  button{cursor:pointer}
+  button.primary{background:linear-gradient(180deg,#169bf0,#116bb9);border:0}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .meter{height:10px;background:#0a1f39;border:1px solid #2a4771;border-radius:999px;overflow:hidden}
+  .bar{height:100%;width:0;background:linear-gradient(90deg,#3ff2a8,#12d6ff)}
+  .passage{line-height:1.9;background:#0a1f39;border:1px solid #2a4771;border-radius:12px;padding:16px;min-height:160px;max-height:320px;overflow:auto}
+  .word{padding:2px 4px;border-radius:6px;margin:0 1px;display:inline-block}
+  .curr{outline:2px dashed var(--accent);background:#12355d}
+  .ok{background:rgba(25,195,125,.25)}
+  .err{background:rgba(255,90,95,.25)}
+  .kpi{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:10px}
+  .kpi .box{background:#0a1f39;border:1px solid #2a4771;border-radius:12px;padding:10px;text-align:center}
+  .big{font-size:22px;font-weight:800}
+  .muted{color:var(--muted)}
+  details{background:#0a1f39;border:1px solid #2a4771;border-radius:12px;padding:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid #22456e;text-align:left}
+  .badge{padding:2px 8px;border-radius:999px;font-size:12px}
+  .b-ok{background:rgba(25,195,125,.2);border:1px solid #19c37d}
+  .b-bad{background:rgba(255,90,95,.2);border:1px solid #ff5a5f}
+  .tiny{font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap grid">
+  <div class="card grid">
+    <div>
+      <h1>Fluency Coach – Automated WCPM</h1>
+      <p class="sub">One-minute oral reading with automatic word matching (if speech recognition is supported) and teacher-friendly scoring. Data stays in this browser.</p>
+    </div>
+
+    <div class="grid two">
+      <div class="grid">
+        <div class="row">
+          <div>
+            <label for="student">Student</label><br/>
+            <input id="student" placeholder="e.g., Alex R." style="min-width:220px" />
+          </div>
+          <div>
+            <label for="grade">Grade</label><br/>
+            <select id="grade"></select>
+          </div>
+          <div>
+            <label for="passage">Passage</label><br/>
+            <select id="passage" style="min-width:260px"></select>
+          </div>
+          <div>
+            <label for="target">Target WCPM</label><br/>
+            <input id="target" type="number" value="90" style="width:110px" />
+          </div>
+        </div>
+        <div class="row">
+          <button class="primary" id="btnStart">Start 60s</button>
+          <button id="btnStop" disabled>Stop</button>
+          <button id="btnReset">Reset</button>
+          <span id="status" class="muted">Idle</span>
+        </div>
+        <div class="meter"><div class="bar" id="bar"></div></div>
+
+        <div class="kpi">
+          <div class="box"><div class="muted">Words Attempted</div><div class="big" id="twa">0</div></div>
+          <div class="box"><div class="muted">Correct Words</div><div class="big" id="correct">0</div></div>
+          <div class="box"><div class="muted">Errors</div><div class="big" id="errors">0</div></div>
+          <div class="box"><div class="muted">WCPM</div><div class="big" id="wcpm">0</div></div>
+        </div>
+
+        <div class="row">
+          <button id="btnSave" class="primary" disabled>Save Result</button>
+          <button id="btnExport">Export CSV</button>
+          <span class="muted" id="savedCount">0 records</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Passage</label>
+        <div id="passageView" class="passage"></div>
+        <div class="tiny muted">Tip: If auto-matching is unavailable, you can still click words to toggle <span style="background:rgba(25,195,125,.25);padding:0 4px;border-radius:6px">correct</span>/<span style="background:rgba(255,90,95,.25);padding:0 4px;border-radius:6px">error</span> and adjust counts during the minute.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card grid">
+    <h3 style="margin:0">Results</h3>
+    <div class="row tiny muted">WCPM = Words Attempted − Errors. Accuracy = Correct / Attempted.</div>
+    <div style="overflow:auto">
+      <table id="tbl"><thead><tr>
+        <th>Date</th><th>Student</th><th>Grade</th><th>Passage</th><th>Attempted</th><th>Correct</th><th>Errors</th><th>WCPM</th><th>Acc%</th><th>Target</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary><strong>Settings & Notes</strong></summary>
+    <div class="grid">
+      <div class="tiny muted">Speech recognition uses the browser (Chrome’s webkitSpeechRecognition). If unavailable or blocked, you can still run the timing and click words manually; scores will update live.</div>
+      <div class="tiny muted">Matching is forgiving (punctuation and simple variants ignored). Manual corrections are expected for young readers.</div>
+    </div>
+  </details>
+</div>
+
+<script>
+/**** Sample Passage Library ***************************************************/
+const PASSAGES = [
+  { id:"g2_1", grade:"2", title:"At the Park", text:`Ben and Mia went to the park after school. The sun was warm, and a light wind moved the leaves. Ben pushed Mia on the swing while she laughed. Then they took turns climbing the low rock wall. A small dog chased a red ball, and the owner waved hello. When it was time to go, they promised to come back on Saturday.` },
+  { id:"g3_1", grade:"3", title:"The Class Garden", text:`Our class started a garden in the spring. We planted beans, lettuce, and bright yellow flowers. Everyone had a job. Some students pulled weeds while others carried water. We kept a chart to track how tall the plants grew each week. By the end of May, we had a salad party with the food we grew ourselves.` },
+  { id:"g4_1", grade:"4", title:"A Windy Day", text:`The wind pushed dark clouds across the sky and bent the tall grass by the river. Birds fluttered close to the ground, searching for shelter. I pulled my jacket tight and hurried home. My brother was already inside, taping a poster to the wall that read, "Be Ready." We checked the weather radio and filled a jug with water just in case.` },
+  { id:"g5_1", grade:"5", title:"Saving the Science Fair", text:`Jamal planned a solar oven for the science fair, but the day turned cloudy and cool. He worried that his project would fail. Then he remembered a tip from his teacher about reflecting light. Using foil, he built a simple mirror to direct sunlight toward the oven. The temperature finally rose enough to melt chocolate chips, and the judges smiled.` }
+];
+
+/**** Utility *****************************************************************/
+const $ = id => document.getElementById(id);
+const clean = s => (s||"").toLowerCase().replace(/[“”„”\u2019'".,!?;:()\[\]{}]/g,"");
+
+function splitWords(text){
+  return text.replace(/\s+/g,' ').trim().split(' ').map(w=>w.trim()).filter(Boolean);
+}
+function similarity(a,b){ // simple forgiving match
+  a = clean(a); b = clean(b);
+  if(!a || !b) return 0;
+  if(a===b) return 1;
+  if((a.startsWith(b) || b.startsWith(a)) && Math.abs(a.length-b.length)<=1) return .85;
+  return 0;
+}
+
+/**** State *******************************************************************/
+let words = [];               // passage words
+let marks = [];               // 0=unread, 1=correct, -1=error
+let curr = 0;                 // current word index
+let running = false, t0=0, timerId=null, total=60;
+let recog=null, recognizing=false;
+let lastChangeTime = 0;
+let lastChangedIdx = -1;
+let nonMatchStreak = 0;
+const STOPWORDS = new Set(["oh","uh","um","er","ah","uhh","umm","i","mean","like","so","yeah","okay","ok","sorry"]);
+
+/**** Build selectors *********************************************************/
+(function initSelectors(){
+  const grades = [...new Set(PASSAGES.map(p=>p.grade))].sort((a,b)=>+a-+b);
+  grades.forEach(g=>{ const opt=document.createElement('option'); opt.value=g; opt.textContent=g; $('grade').appendChild(opt); });
+  $('grade').value = grades[0];
+  renderPassageList();
+})();
+function renderPassageList(){
+  const g = $('grade').value;
+  $('passage').innerHTML='';
+  PASSAGES.filter(p=>p.grade===g).forEach(p=>{
+    const opt=document.createElement('option');
+    opt.value=p.id; opt.textContent=`${p.title} (≈${splitWords(p.text).length} words)`; $('passage').appendChild(opt);
+  });
+  loadPassage($('passage').value);
+}
+$('grade').addEventListener('change', renderPassageList);
+$('passage').addEventListener('change', e=> loadPassage(e.target.value));
+
+function loadPassage(id){
+  const p = PASSAGES.find(x=>x.id===id) || PASSAGES[0];
+  words = splitWords(p.text);
+  marks = new Array(words.length).fill(0);
+  curr = 0; updateKPIs();
+  renderPassageView();
+}
+
+function scrollToCurrent(){
+  const el = document.querySelector('#passageView .curr');
+  if (el) el.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'smooth'});
+}
+function renderPassageView(){
+  const frag = document.createDocumentFragment();
+  words.forEach((w,i)=>{
+    const span = document.createElement('span');
+    span.className = 'word' + (i===curr?' curr':'') + (marks[i]===1?' ok':'') + (marks[i]===-1?' err':'');
+    span.textContent = w;
+    span.dataset.idx = i;
+    span.addEventListener('click', ()=>{
+      if(!running) return;
+      if(marks[i]===1){ marks[i] = -1; if(i>=curr) curr=i+1; }
+      else if(marks[i]===-1){ marks[i] = 0; }
+      else { marks[i] = 1; if(i>=curr) curr=i+1; }
+      renderPassageView(); updateKPIs();
+    });
+    frag.appendChild(span);
+    frag.appendChild(document.createTextNode(' '));
+  });
+  const pv = $('passageView');
+  pv.innerHTML=''; pv.appendChild(frag);
+  scrollToCurrent();
+}
+
+/**** Timer *******************************************************************/
+function startTimer(){
+  t0 = performance.now();
+  timerId = requestAnimationFrame(tick);
+}
+function tick(ts){
+  const elapsed = (ts - t0)/1000;
+  $('bar').style.width = Math.min(100,(elapsed/total)*100)+"%";
+  if(elapsed>=total){ stopAll(); return; }
+  timerId = requestAnimationFrame(tick);
+}
+function stopTimer(){ if(timerId){ cancelAnimationFrame(timerId); timerId=null; } }
+
+/**** Speech Recognition (fast interim + final) *******************************/
+function startRecog(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; 
+  if(!SR){ $('status').textContent='ASR not available. Use manual clicks if desired.'; return; }
+  recog = new SR();
+  recog.lang='en-US';
+  recog.continuous = true;
+  recog.interimResults = true;
+  recognizing=true;
+
+  let lastInterimAt = 0;
+  recog.onresult = e => {
+    let finals = "", inter = "";
+    for (let i=e.resultIndex; i<e.results.length; i++){
+      const tr = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finals += " " + tr; else inter += " " + tr;
+    }
+    const now = performance.now();
+    if (inter.trim() && now - lastInterimAt > 120) { // responsive cursor
+      consumeTranscript(inter); lastInterimAt = now;
+    }
+    if (finals.trim()) consumeTranscript(finals); // authoritative
+  };
+
+  recog.onerror = ()=>{ $('status').textContent='ASR error (continue manual if needed).'; };
+  recog.onend = ()=>{ recognizing=false; };
+  try{ recog.start(); }catch{ recognizing=false; }
+}
+
+function consumeTranscript(txt){
+  const tokens = splitWords(txt).map(clean);
+  let moved = false;
+  const now = performance.now();
+  for(const t of tokens){
+    if(!t) continue;
+    if(STOPWORDS.has(t)) continue;
+
+    // self-correction: flip previous error to correct if quickly repeated
+    if(curr>0 && marks[curr-1]===-1 && similarity(t, words[curr-1])>=0.85 && (now - lastChangeTime) < 3000){
+      marks[curr-1] = 1; lastChangedIdx = curr-1; lastChangeTime = now; moved = true;
+      renderPassageView(); updateKPIs(); continue;
+    }
+
+    if(curr>=words.length) break;
+    const target = words[curr];
+    const sim = similarity(t, target);
+
+    if(sim>=0.85){
+      marks[curr]=1; curr++; moved=true; nonMatchStreak = 0;
+      lastChangedIdx = curr-1; lastChangeTime = now;
+    } else {
+      nonMatchStreak++;
+      // advance sooner if the next word matches (skip/omission)
+      if(curr+1 < words.length && similarity(t, words[curr+1])>=0.85 && nonMatchStreak>=2){
+        marks[curr] = -1; curr++; moved=true; nonMatchStreak = 0;
+        lastChangedIdx = curr-1; lastChangeTime = now;
+      }
+    }
+  }
+  if(moved){ renderPassageView(); updateKPIs(); }
+}
+
+/**** KPI calculation *********************************************************/
+function updateKPIs(){
+  const attempted = Math.max(curr, marks.findLastIndex ? (marks.findLastIndex(m=>m!==0)+1||0) : curr);
+  const correct = marks.filter(m=>m===1).length;
+  const errors = marks.filter(m=>m===-1).length;
+  const wcpm = Math.max(0, correct); // correct per minute (60s sample)
+  $('twa').textContent = attempted;
+  $('correct').textContent = correct;
+  $('errors').textContent = errors;
+  $('wcpm').textContent = wcpm;
+}
+
+/**** Start/Stop/Reset ********************************************************/
+function startAll(){
+  if(running) return;
+  running = true; $('status').textContent='Recording & matching…';
+  $('btnStart').disabled = true; $('btnStop').disabled = false; $('btnSave').disabled = true;
+  marks.fill(0); curr=0; renderPassageView(); updateKPIs();
+  startTimer(); startRecog();
+}
+function stopAll(){
+  if(!running) return;
+  running=false; $('status').textContent='Stopped.';
+  $('btnStart').disabled=false; $('btnStop').disabled=true; $('btnSave').disabled=false;
+  stopTimer(); if(recognizing && recog){ try{recog.stop();}catch{} recognizing=false; }
+  updateKPIs();
+}
+function resetAll(){
+  running=false; stopTimer(); if(recognizing && recog){ try{recog.stop();}catch{} recognizing=false; }
+  marks.fill(0); curr=0; $('bar').style.width='0%'; $('status').textContent='Idle';
+  $('btnStart').disabled=false; $('btnStop').disabled=true; $('btnSave').disabled=true;
+  renderPassageView(); updateKPIs();
+}
+
+$('btnStart').onclick = startAll;
+$('btnStop').onclick = stopAll;
+$('btnReset').onclick = resetAll;
+
+/**** Save / Export ***********************************************************/
+function getSaved(){ return JSON.parse(localStorage.getItem('fc_records')||'[]'); }
+function setSaved(arr){ localStorage.setItem('fc_records', JSON.stringify(arr)); $('savedCount').textContent = `${arr.length} records`; renderTable(arr); }
+
+$('btnSave').onclick = ()=>{
+  const p = PASSAGES.find(x=>x.id=== $('passage').value);
+  const attempted = Math.max(curr, marks.findLastIndex ? (marks.findLastIndex(m=>m!==0)+1||0) : curr);
+  const correct = marks.filter(m=>m===1).length;
+  const errors = marks.filter(m=>m===-1).length;
+  const wcpm = Math.max(0, correct);
+  const acc = attempted? Math.round(100*correct/attempted):0;
+  const row = {
+    time: new Date().toISOString(),
+    student: $('student').value||'Unknown',
+    grade: $('grade').value,
+    passage_id: p.id,
+    passage_title: p.title,
+    attempted, correct, errors, wcpm, accuracy: acc,
+    target: +$('target').value||0
+  };
+  const arr = getSaved(); arr.push(row); setSaved(arr);
+};
+
+$('btnExport').onclick = ()=>{
+  const rows = getSaved(); if(!rows.length){ alert('No records to export.'); return; }
+  const headers = ["time","student","grade","passage_id","passage_title","attempted","correct","errors","wcpm","accuracy","target"];
+  const esc = v=>`"${String(v).replace(/"/g,'""')}"`;
+  const csv = [headers.join(',')].concat(rows.map(r=>headers.map(h=>esc(r[h]??'')).join(','))).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='fluency_records.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+};
+
+function renderTable(rows){
+  const tb = document.querySelector('#tbl tbody');
+  tb.innerHTML = rows.map(r=>{
+    const good = r.target && r.wcpm>=r.target;
+    return `<tr>
+      <td>${new Date(r.time).toLocaleString()}</td>
+      <td>${r.student}</td>
+      <td>${r.grade}</td>
+      <td>${r.passage_title}</td>
+      <td>${r.attempted}</td>
+      <td>${r.correct}</td>
+      <td>${r.errors}</td>
+      <td>${r.wcpm} ${r.target?`<span class="badge ${good?'b-ok':'b-bad'}">${good?'meets':'below'}</span>`:''}</td>
+      <td>${r.accuracy}%</td>
+      <td>${r.target||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// boot
+setSaved(getSaved());
+</script>
+</body>
+</html>
